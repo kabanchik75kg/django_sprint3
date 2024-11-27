@@ -1,9 +1,9 @@
+from constants import Constant
 from django.contrib.auth import get_user_model
 from django.db import models
-from django.template.defaultfilters import truncatewords
-from django.utils import timezone
 
-from .constants import Constant
+from .managers import PublishedPost
+from .utils import trancate_words
 
 User = get_user_model()
 
@@ -23,7 +23,8 @@ class BaseModel(models.Model):
     )
     created_at = models.DateTimeField(
         auto_now_add=True,
-        verbose_name="Добавлено")
+        verbose_name="Добавлено"
+    )
 
     class Meta:
         abstract = True
@@ -41,7 +42,7 @@ class Location(BaseModel):
         verbose_name_plural = "Местоположения"
 
     def __str__(self):
-        return truncatewords(self.name, Constant.MAX_DISPLAY_WORDS)
+        return trancate_words(self.name, Constant.MAX_DISPLAY_LETTERS)
 
 
 class Category(BaseModel):
@@ -64,37 +65,7 @@ class Category(BaseModel):
         verbose_name_plural = "Категории"
 
     def __str__(self):
-        return truncatewords(self.title, Constant.MAX_DISPLAY_WORDS)
-
-
-class ActivePost(models.Manager):
-    """
-    Возвращает QuerySet всех постов модели Post,
-    которые удовлетворяют требованиям.
-
-    Метод фильтрует объекты модели Post, возвращая только те,
-    у которых:
-        дата публикации — не позже текущего времени,
-        он опубликован,
-        категория, к которой он принадлежит, не снята с публикации;
-    А также объединяет таблицы: location, author, category
-
-    Returns:
-        QuerySet: Объекты, строками которых является
-        объединение всех таблиц и выборка по критериям.
-    """
-
-    def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .filter(
-                pub_date__lte=timezone.now(),
-                is_published=True,
-                category__is_published=True,
-            )
-            .select_related("location", "author", "category")
-        )
+        return trancate_words(self.title, Constant.MAX_DISPLAY_LETTERS)
 
 
 class Post(BaseModel):
@@ -128,13 +99,14 @@ class Post(BaseModel):
         verbose_name="Категория",
         related_name='posts'
     )
-    ordering = ['-pub_date']
+
     objects = models.Manager()
-    active_post = ActivePost()
+    published_posts = PublishedPost()
 
     class Meta(BaseModel.Meta):
         verbose_name = "публикация"
         verbose_name_plural = "Публикации"
+        ordering = ['-pub_date']
 
     def __str__(self):
-        return truncatewords(self.title, Constant.MAX_DISPLAY_WORDS)
+        return trancate_words(self.title, Constant.MAX_DISPLAY_LETTERS)
