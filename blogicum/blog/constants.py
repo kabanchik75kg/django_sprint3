@@ -1,0 +1,4 @@
+class Constant:
+    MAX_STRING_LENGTH = 256
+    MAX_DISPLAY_WORDS = 10
+    COUNT_POSTS_ON_PAGE = 5
